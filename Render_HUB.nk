@@ -1,0 +1,208 @@
+set cut_paste_input [stack 0]
+version 13.2 v2
+push $cut_paste_input
+Group {
+ name Render_HUB
+ knobChanged "renderHub = nuke.thisNode()\nknob = nuke.thisKnob()\n\n\nif knob.name() == \"Mode\":\n    knobValue = knob.value()\n    if knobValue == \"Auto-\$Gui\":\n       renderHub.knob(\"ModeBool\").setExpression(\"!\$gui\")\n    else:\n        if knobValue == \"Render\":\n            modeBool = True\n        else:\n            modeBool = False\n        renderHub.knob(\"ModeBool\").clearAnimated()\n        renderHub.knob(\"ModeBool\").setValue(modeBool)\nelif knob.name() == \"actionScanlineRender\":\n    if knob.value() == \"Parent\":\n        renderHub.knob(\"parentScanlineProfile\").clearFlag(nuke.INVISIBLE)\n    else:\n        renderHub.knob(\"parentScanlineProfile\").setFlag(nuke.INVISIBLE)"
+ tile_color 0xffaa2dff
+ label "Mode: \[value this.Mode]"
+ note_font_size 30
+ selected true
+ xpos 100
+ ypos 377
+ hide_input true
+ addUserKnob {20 Management}
+ addUserKnob {4 Mode t "The current settings to apply in the Nuke script.\n - Work: Low profile setting to work in the script.\n - Render: High profile setting to render the script.\n - Auto \$Gui: Use the \$Gui option to set Work setting if Nuke have interfece active and Render setting if the script is rendering in batch modo (Farm) automatically." M {Work Render "Auto-\$Gui" "" "" "" "" ""}}
+ addUserKnob {6 ModeBool -STARTLINE +INVISIBLE}
+ addUserKnob {26 ""}
+ addUserKnob {26 selectActions l "" +STARTLINE T "<font color=\"grey\" face=\"Comic Sans MS\" size=\"10\">Select actions</font>"}
+ addUserKnob {4 selectAllType l "Select all" t "Type to select the nodes of the script." M {Kronos Transform ScanlineRender Switch VectorBlur2 "" "" "" "" "" "" "" "" "" "" "" "" "" ""}}
+ addUserKnob {22 selectAllExec l Select t "Select all the nodes in the script of the selected type." -STARTLINE T "nodeType = nuke.thisNode().knob(\"selectAllType\").value()\nwith nuke.toNode('.'.join(\['root'] + nuke.thisNode().fullName().split('.')\[:-1])):\n    for n in nuke.allNodes(nodeType):\n        n.setSelected(True)"}
+ addUserKnob {4 selectParentType l "Select Parent" t "Type to select the parent nodes." M {All Kronos Transform ScanlineRender Switch VectorBlur2 "" "" "" ""}}
+ addUserKnob {22 selectParentExec l Select t "Select the nodes parent to the Render HUB of the selected type." -STARTLINE T "nodeType = nuke.thisNode().knob(\"selectParentType\").value()\nwith nuke.toNode('.'.join(\['root'] + nuke.thisNode().fullName().split('.')\[:-1])):\n    for n in nuke.allNodes():\n        if n.name() == \"Render_HUB\":\n            continue\n        if n.Class() != nodeType and nodeType != \"All\":\n            continue\n        nLink = False\n        for knob in n.allKnobs():\n            if knob.hasExpression():\n                if knob.toScript().find(\"Render_HUB\") >= 0:\n                    nLink = True\n            if nLink:\n                n.setSelected(True)\n                break"}
+ addUserKnob {26 ""}
+ addUserKnob {26 parentActions l "" +STARTLINE T "<font color=\"grey\" face=\"Comic Sans MS\" size=\"10\">Parent actions</font>"}
+ addUserKnob {26 parentKnobText l "" +STARTLINE T "Link a Knob "}
+ addUserKnob {4 knobType l "" t "Knob or node configuration type to parent/unparent when executes this option." +STARTLINE M {Disable Switch Filter "" "" "" "" "" "" ""}}
+ addUserKnob {4 linkKnobAction l "" t "Parent action to execute to the selected nodes." -STARTLINE M {Parent Unparent "" "" "" "" ""}}
+ addUserKnob {22 execDisable l "Execute to Selected" t "Parent/Unparent the selected knob/configuration of the selected node to the Render HUB." -STARTLINE T "expresion = \"!parent.\{nodeName\}.ModeBool\"\nrenderHub = nuke.thisNode()\naction = renderHub.knob(\"linkKnobAction\").value()\nknobName = renderHub.knob(\"knobType\").value()\nknobName = \"disable\" if knobName == \"Disable\" else knobName\nif knobName == \"Switch\":\n    knobName = \"which\"\n    expresion = \"parent.\{nodeName\}.ModeBool? 0:1\"\nif knobName == \"Filter\":\n    knobName = \"filter\"\n    expresion = \"parent.\{nodeName\}.Render_HUB_ProfileTransform_work.filter\"\n    expresion = \"parent.\{nodeName\}.ModeBool? parent.\{nodeName\}.Render_HUB_ProfileTransform_Render.filter: parent.\{nodeName\}.Render_HUB_ProfileTransform_Work.filter\"\nwith nuke.toNode('.'.join(\['root'] + nuke.thisNode().fullName().split('.')\[:-1])):\n    for node in nuke.selectedNodes():\n        if node.fullName() == renderHub.fullName():\n            continue\n        knob = node.knob(knobName)\n        if knob is None:\n            continue\n        if action == \"Parent\":\n            knob.setExpression(expresion.format(nodeName=renderHub.name()))\n        elif action == \"Unparent\":\n            knob.clearAnimated()"}
+ addUserKnob {26 parentScanlineText l "" +STARTLINE T "Scanline Render Nodes Actions"}
+ addUserKnob {4 actionScanlineRender l "" t "Parent action to execute to the selected Scanline Render node." +STARTLINE M {Parent Unparent "" "" "" ""}}
+ addUserKnob {4 parentScanlineProfile l "" t "Render profile of the HUB to parent the selected nodes." -STARTLINE M {Profile1 Profile2 "" "" "" "" "" "" "" ""}}
+ addUserKnob {22 execScanlineRenderParent l "Execute to Selected" t "Parent/Unparent the selected scanlineRenders to the selected profile." -STARTLINE T "parentKnobs = \[\"conservative_shader_sampling\", \"transparency\", \"ztest_enabled\", \"filter\", \"antialiasing\",\n\"zblend_mode\", \"zblend_range\", \"projection_mode\", \"max_tessellation\", \"overscan\", \"ambient\", \n\"samples\", \"shutter\", \"shutteroffset\", \"shuttercustomoffset\", \"temporal_jitter\", \"spatial_jitter\", \n\"focal_jitter\", \"stochastic_samples\", \"motion_vectors_type\"]\n\nexpresion = \"parent.\{nodeName\}.ModeBool? parent.\{nodeName\}.Render_HUB_\{profile\}_Render.\{knob\} : parent.\{nodeName\}.Render_HUB_\{profile\}_Work.\{knob\}\"\nrenderHub = nuke.thisNode()\nwith nuke.toNode('.'.join(\['root'] + nuke.thisNode().fullName().split('.')\[:-1])):\n    profileValue = renderHub.knob(\"parentScanlineProfile\").value()\n    action = renderHub.knob(\"actionScanlineRender\").value()\n    for node in nuke.selectedNodes(\"ScanlineRender\"):\n        nodeKnobs = node.knobs().keys()\n        for knob in nodeKnobs:\n            if knob not in parentKnobs:\n                continue\n            if action == \"Parent\":\n                node.knob(knob).setExpression(expresion.format(nodeName=renderHub.name(), knob=knob, profile=profileValue))\n            elif action == \"Unparent\":\n                node.knob(knob).clearAnimated()\n"}
+ addUserKnob {26 ""}
+ addUserKnob {26 nodeCreationText l "" +STARTLINE T "Create nodes already parent to the HUB"}
+ addUserKnob {4 nodeType l "Node Type" t "Node type to create." M {switch ScanlineRender "" "" ""}}
+ nodeType ScanlineRender
+ addUserKnob {22 createNode l Create t "Creates the selected node type and parent it to the Render HUB node. If the node is the ScanlineRender, it will be parent to the profile currently selecte above." -STARTLINE T "renderHub = nuke.thisNode()\nwith nuke.toNode('.'.join(\['root'] + nuke.thisNode().fullName().split('.')\[:-1])):\n    for n in nuke.selectedNodes():\n        n.setSelected(False)\n    nodeType = renderHub.knob(\"nodeType\").value()\n    if nodeType == \"switch\":\n        node = nuke.createNode(\"Switch\")\n        node.setSelected(True)\n        renderHub.knob(\"execDisable\").execute()\n    elif nodeType == \"ScanlineRender\":\n        node = nuke.createNode(\"ScanlineRender\")\n        node.setSelected(True)\n        renderHub.knob(\"execScanlineRenderParent\").execute()"}
+ addUserKnob {20 General}
+ addUserKnob {26 WorkingSettingsG l "Working Settings"}
+ addUserKnob {41 filter_4 l filter T Render_HUB_ProfileTransform_Work.filter}
+ addUserKnob {41 clamp -STARTLINE T Render_HUB_ProfileTransform_Work.clamp}
+ addUserKnob {41 black_outside l "black outside" -STARTLINE T Render_HUB_ProfileTransform_Work.black_outside}
+ addUserKnob {26 RenderSettingsG l "Render Settings"}
+ addUserKnob {41 filter_5 l filter T Render_HUB_ProfileTransform_Render.filter}
+ addUserKnob {41 clamp_1 l clamp -STARTLINE T Render_HUB_ProfileTransform_Render.clamp}
+ addUserKnob {41 black_outside_1 l "black outside" -STARTLINE T Render_HUB_ProfileTransform_Render.black_outside}
+ addUserKnob {20 Profile1}
+ addUserKnob {26 WorkingSettings1 l "Working Settings"}
+ addUserKnob {20 BasicSettings_w1 l BasicSettings n 1}
+ BasicSettings_w1 0
+ addUserKnob {41 transparency T Render_HUB_Profile1_Work.transparency}
+ addUserKnob {41 ztest_enabled l Z-buffer -STARTLINE T Render_HUB_Profile1_Work.ztest_enabled}
+ addUserKnob {41 filter T Render_HUB_Profile1_Work.filter}
+ addUserKnob {41 antialiasing T Render_HUB_Profile1_Work.antialiasing}
+ addUserKnob {41 zblend_mode l "Z-blend mode" T Render_HUB_Profile1_Work.zblend_mode}
+ addUserKnob {41 zblend_range l "Z-blend range" T Render_HUB_Profile1_Work.zblend_range}
+ addUserKnob {41 projection_mode l "projection mode" T Render_HUB_Profile1_Work.projection_mode}
+ addUserKnob {41 max_tessellation l "tessellation max" T Render_HUB_Profile1_Work.max_tessellation}
+ addUserKnob {41 overscan T Render_HUB_Profile1_Work.overscan}
+ addUserKnob {26 ""}
+ addUserKnob {41 ambient T Render_HUB_Profile1_Work.ambient}
+ addUserKnob {20 endGroup n -1}
+ addUserKnob {20 MultiSample_w1 l MultiSample t "Props from MultiSample tap of Scanline Render" n 1}
+ MultiSample_w1 0
+ addUserKnob {41 samples T Render_HUB_Profile1_Work.samples}
+ addUserKnob {41 shutter T Render_HUB_Profile1_Work.shutter}
+ addUserKnob {41 shutteroffset l "shutter offset" T Render_HUB_Profile1_Work.shutteroffset}
+ addUserKnob {41 temporal_jitter l "randomize time" T Render_HUB_Profile1_Work.temporal_jitter}
+ addUserKnob {41 spatial_jitter l "sample diameter" T Render_HUB_Profile1_Work.spatial_jitter}
+ addUserKnob {41 focal_jitter l "focus diameter" T Render_HUB_Profile1_Work.focal_jitter}
+ addUserKnob {41 stochastic_samples l "stochastic samples" T Render_HUB_Profile1_Work.stochastic_samples}
+ addUserKnob {20 endGroup_1 l endGroup n -1}
+ addUserKnob {26 ""}
+ addUserKnob {26 RenderSettings1 l "Render Settings"}
+ addUserKnob {20 BasicSettings_r l BasicSettings n 1}
+ BasicSettings_r 0
+ addUserKnob {41 transparency_1 l transparency T Render_HUB_Profile1_Render.transparency}
+ addUserKnob {41 ztest_enabled_1 l Z-buffer -STARTLINE T Render_HUB_Profile1_Render.ztest_enabled}
+ addUserKnob {41 filter_1 l filter T Render_HUB_Profile1_Render.filter}
+ addUserKnob {41 antialiasing_1 l antialiasing T Render_HUB_Profile1_Render.antialiasing}
+ addUserKnob {41 zblend_mode_1 l "Z-blend mode" T Render_HUB_Profile1_Render.zblend_mode}
+ addUserKnob {41 zblend_range_1 l "Z-blend range" T Render_HUB_Profile1_Render.zblend_range}
+ addUserKnob {41 projection_mode_1 l "projection mode" T Render_HUB_Profile1_Render.projection_mode}
+ addUserKnob {41 max_tessellation_1 l "tessellation max" T Render_HUB_Profile1_Render.max_tessellation}
+ addUserKnob {41 overscan_1 l overscan T Render_HUB_Profile1_Render.overscan}
+ addUserKnob {26 ""}
+ addUserKnob {41 ambient_1 l ambient T Render_HUB_Profile1_Render.ambient}
+ addUserKnob {20 endGroup_2 l endGroup n -1}
+ addUserKnob {20 MultiSample_r l MultiSample n 1}
+ MultiSample_r 0
+ addUserKnob {41 samples_1 l samples T Render_HUB_Profile1_Render.samples}
+ addUserKnob {41 shutter_1 l shutter T Render_HUB_Profile1_Render.shutter}
+ addUserKnob {41 shutteroffset_1 l "shutter offset" T Render_HUB_Profile1_Render.shutteroffset}
+ addUserKnob {41 temporal_jitter_1 l "randomize time" T Render_HUB_Profile1_Render.temporal_jitter}
+ addUserKnob {41 spatial_jitter_1 l "sample diameter" T Render_HUB_Profile1_Render.spatial_jitter}
+ addUserKnob {41 focal_jitter_1 l "focus diameter" T Render_HUB_Profile1_Render.focal_jitter}
+ addUserKnob {41 stochastic_samples_1 l "stochastic samples" T Render_HUB_Profile1_Render.stochastic_samples}
+ addUserKnob {20 endGroup_3 l endGroup n -1}
+ addUserKnob {20 Profile2}
+ addUserKnob {26 WorkingSettings2 l "Working Settings"}
+ addUserKnob {20 BasicSettings_w2 l "Basic Settings" n 1}
+ BasicSettings_w2 0
+ addUserKnob {41 transparency_2 l transparency T Render_HUB_Profile2_Work.transparency}
+ addUserKnob {41 ztest_enabled_2 l Z-buffer -STARTLINE T Render_HUB_Profile2_Work.ztest_enabled}
+ addUserKnob {41 filter_2 l filter T Render_HUB_Profile2_Work.filter}
+ addUserKnob {41 antialiasing_2 l antialiasing T Render_HUB_Profile2_Work.antialiasing}
+ addUserKnob {41 zblend_mode_2 l "Z-blend mode" T Render_HUB_Profile2_Work.zblend_mode}
+ addUserKnob {41 zblend_range_2 l "Z-blend range" T Render_HUB_Profile2_Work.zblend_range}
+ addUserKnob {41 projection_mode_2 l "projection mode" T Render_HUB_Profile2_Work.projection_mode}
+ addUserKnob {41 max_tessellation_2 l "tessellation max" T Render_HUB_Profile2_Work.max_tessellation}
+ addUserKnob {41 overscan_2 l overscan T Render_HUB_Profile2_Work.overscan}
+ addUserKnob {26 ""}
+ addUserKnob {41 ambient_2 l ambient T Render_HUB_Profile2_Work.ambient}
+ addUserKnob {1 string}
+ addUserKnob {20 endGroup_4 l endGroup n -1}
+ addUserKnob {20 MultiSample_w2 l MultiSample n 1}
+ MultiSample_w2 0
+ addUserKnob {41 samples_2 l samples T Render_HUB_Profile2_Work.samples}
+ addUserKnob {41 shutter_2 l shutter T Render_HUB_Profile2_Work.shutter}
+ addUserKnob {41 shutteroffset_2 l "shutter offset" T Render_HUB_Profile2_Work.shutteroffset}
+ addUserKnob {41 shuttercustomoffset l "" -STARTLINE T Render_HUB_Profile2_Work.shuttercustomoffset}
+ addUserKnob {41 temporal_jitter_2 l "randomize time" T Render_HUB_Profile2_Work.temporal_jitter}
+ addUserKnob {41 spatial_jitter_2 l "sample diameter" T Render_HUB_Profile2_Work.spatial_jitter}
+ addUserKnob {41 focal_jitter_2 l "focus diameter" T Render_HUB_Profile2_Work.focal_jitter}
+ addUserKnob {41 stochastic_samples_2 l "stochastic samples" T Render_HUB_Profile2_Work.stochastic_samples}
+ addUserKnob {41 uniform_distribution l "uniform distribution" -STARTLINE T Render_HUB_Profile2_Work.uniform_distribution}
+ addUserKnob {20 endGroup_5 l endGroup n -1}
+ addUserKnob {26 RenderSettings2 l RenderSettings}
+ addUserKnob {20 BasicSettings_r2 l BasicSettings n 1}
+ BasicSettings_r2 0
+ addUserKnob {41 transparency_3 l transparency T Render_HUB_Profile2_Render.transparency}
+ addUserKnob {41 ztest_enabled_3 l Z-buffer -STARTLINE T Render_HUB_Profile2_Render.ztest_enabled}
+ addUserKnob {41 filter_3 l filter T Render_HUB_Profile2_Render.filter}
+ addUserKnob {41 antialiasing_3 l antialiasing T Render_HUB_Profile2_Render.antialiasing}
+ addUserKnob {41 zblend_mode_3 l "Z-blend mode" T Render_HUB_Profile2_Render.zblend_mode}
+ addUserKnob {41 zblend_range_3 l "Z-blend range" T Render_HUB_Profile2_Render.zblend_range}
+ addUserKnob {41 projection_mode_3 l "projection mode" T Render_HUB_Profile2_Render.projection_mode}
+ addUserKnob {41 max_tessellation_3 l "tessellation max" T Render_HUB_Profile2_Render.max_tessellation}
+ addUserKnob {41 overscan_3 l overscan T Render_HUB_Profile2_Render.overscan}
+ addUserKnob {26 ""}
+ addUserKnob {41 ambient_3 l ambient T Render_HUB_Profile2_Render.ambient}
+ addUserKnob {20 endGroup_6 l endGroup n -1}
+ addUserKnob {20 MultiSample_r2 l MultiSample n 1}
+ MultiSample_r2 0
+ addUserKnob {41 samples_3 l samples T Render_HUB_Profile2_Render.samples}
+ addUserKnob {41 shutter_3 l shutter T Render_HUB_Profile2_Render.shutter}
+ addUserKnob {41 shutteroffset_3 l "shutter offset" T Render_HUB_Profile2_Render.shutteroffset}
+ addUserKnob {41 shuttercustomoffset_1 l "" -STARTLINE T Render_HUB_Profile2_Render.shuttercustomoffset}
+ addUserKnob {41 temporal_jitter_3 l "randomize time" T Render_HUB_Profile2_Render.temporal_jitter}
+ addUserKnob {41 spatial_jitter_3 l "sample diameter" T Render_HUB_Profile2_Render.spatial_jitter}
+ addUserKnob {41 focal_jitter_3 l "focus diameter" T Render_HUB_Profile2_Render.focal_jitter}
+ addUserKnob {41 stochastic_samples_3 l "stochastic samples" T Render_HUB_Profile2_Render.stochastic_samples}
+ addUserKnob {41 uniform_distribution_1 l "uniform distribution" -STARTLINE T Render_HUB_Profile2_Render.uniform_distribution}
+ addUserKnob {20 endGroup_7 l endGroup n -1}
+ addUserKnob {20 jhi_config l config +INVISIBLE}
+ addUserKnob {1 jhi_name}
+ jhi_name Render_HUB
+ addUserKnob {1 jhi_version}
+ jhi_version 0.1.0
+}
+ Input {
+  inputs 0
+  name Input1
+  xpos -240
+  ypos 200
+ }
+ Output {
+  name Output1
+  xpos -240
+  ypos 350
+ }
+ ScanlineRender {
+  inputs 0
+  name Render_HUB_Profile1_Work
+  xpos -70
+  ypos 200
+ }
+ ScanlineRender {
+  inputs 0
+  name Render_HUB_Profile2_Work
+  xpos -70
+  ypos 270
+ }
+ Transform {
+  inputs 0
+  name Render_HUB_ProfileTransform_Work
+  xpos -70
+  ypos 340
+ }
+ Transform {
+  inputs 0
+  name Render_HUB_ProfileTransform_Render
+  xpos 120
+  ypos 340
+ }
+ ScanlineRender {
+  inputs 0
+  name Render_HUB_Profile2_Render
+  xpos 120
+  ypos 270
+ }
+ ScanlineRender {
+  inputs 0
+  name Render_HUB_Profile1_Render
+  xpos 120
+  ypos 200
+ }
+end_group
