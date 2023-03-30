@@ -3,38 +3,36 @@ version 13.2 v2
 push $cut_paste_input
 Group {
  name Render_HUB
- knobChanged "renderHub = nuke.thisNode()\nknob = nuke.thisKnob()\n\n\nif knob.name() == \"Mode\":\n    knobValue = knob.value()\n    if knobValue == \"Auto-\$Gui\":\n       renderHub.knob(\"ModeBool\").setExpression(\"!\$gui\")\n    else:\n        if knobValue == \"Render\":\n            modeBool = True\n        else:\n            modeBool = False\n        renderHub.knob(\"ModeBool\").clearAnimated()\n        renderHub.knob(\"ModeBool\").setValue(modeBool)\nelif knob.name() == \"actionScanlineRender\":\n    if knob.value() == \"Parent\":\n        renderHub.knob(\"parentScanlineProfile\").clearFlag(nuke.INVISIBLE)\n    else:\n        renderHub.knob(\"parentScanlineProfile\").setFlag(nuke.INVISIBLE)"
+ onCreate "def jhi_checkRootParentKnobs(node, root):\n    rootMode = root.knob(\"jhi_RenderHUB_mode\")\n    if not rootMode:\n        rhTab = nuke.Tab_Knob(\"jhi_config\",\"Script Config JHI\")\n        root.addKnob(rhTab)\n        rhMode = nuke.Boolean_Knob(\"jhi_RenderHUB_mode\",\"Render HUB Mode\")\n        root.addKnob(rhMode)\n    else:\n        rhMode = rootMode\n    if not rhMode.hasExpression():\n        rhMode.setExpression(\"\{0\}.ModeBool\".format(node.name()))\n    \nnode = nuke.thisNode()\nroot = nuke.root()\nif node.knob(\"useRoot\").value():\n    jhi_checkRootParentKnobs(node, root)"
+ knobChanged "renderHub = nuke.thisNode()\nnodeName = renderHub.name()\nknob = nuke.thisKnob()\n\nif knob.name() == \"Mode\":\n    knobValue = knob.value()\n    if knobValue == \"Auto-\$Gui\":\n       renderHub.knob(\"ModeBool\").setExpression(\"!\$gui\")\n    else:\n        if knobValue == \"Render\":\n            modeBool = True\n        else:\n            modeBool = False\n        renderHub.knob(\"ModeBool\").clearAnimated()\n        renderHub.knob(\"ModeBool\").setValue(modeBool)\nelif knob.name() == \"knobType\" or knob.name() == \"linkKnobAction\":\n    if renderHub\[\"knobType\"].value() in \[\"ScanlineRender\", \"Auto\"] and renderHub\[\"linkKnobAction\"].value() == \"Parent\":\n        renderHub.knob(\"parentScanlineProfile\").clearFlag(nuke.INVISIBLE)\n    else:\n        renderHub.knob(\"parentScanlineProfile\").setFlag(nuke.INVISIBLE)\nelif knob.name() == \"useRoot\":\n    nodeExp = \"parent.\{0\}.ModeBool\".format(nodeName)\n    rootExp = \"parent.jhi_RenderHUB_mode\"\n    useRoot = renderHub.knob(\"useRoot\").value()\n    if useRoot:\n        root = nuke.root()\n        if renderHub.knob(\"useRoot\").value():\n            jhi_checkRootParentKnobs(renderHub, root)\n    with nuke.thisNode().parent():\n        for n in nuke.allNodes():\n            jhiName = n.knob(\"jhi_name\")\n            if jhiName:\n                if jhiName.value() == \"Render_HUB\":\n                    continue\n\n            for knob in n.allKnobs():\n                if knob.hasExpression():\n                    rawExp = knob.toScript()\n                    if rawExp.startswith(\"\{\\\"\"):\n                        exp = rawExp.partition(\"\\\"\")\[2].rpartition(\"\\\"\")\[0]\n                    else:\n                        exp = rawExp.partition(\"\{\")\[2].rpartition(\"\}\")\[0]\n                    if useRoot and knob.toScript().find(nodeExp) >= 0:\n                        knob.setExpression(exp.replace(nodeExp, rootExp))\n                    elif knob.toScript().find(rootExp) >= 0:\n                        knob.setExpression(exp.replace(rootExp, nodeExp))"
  tile_color 0xffaa2dff
  label "Mode: \[value this.Mode]"
  note_font_size 30
  selected true
- xpos 100
- ypos 377
+ xpos 177
+ ypos -110
  hide_input true
  addUserKnob {20 Management}
- addUserKnob {4 Mode t "The current settings to apply in the Nuke script.\n - Work: Low profile setting to work in the script.\n - Render: High profile setting to render the script.\n - Auto \$Gui: Use the \$Gui option to set Work setting if Nuke have interfece active and Render setting if the script is rendering in batch modo (Farm) automatically." M {Work Render "Auto-\$Gui" "" "" "" "" ""}}
+ addUserKnob {26 text l "" +STARTLINE T "<font color=\"grey\" face=\"Comic Sans MS\" size=\"10\">Mode: </font>"}
+ addUserKnob {4 Mode l "" t "The current settings to apply in the Nuke script.\n - Work: Low profile setting to work in the script.\n - Render: High profile setting to render the script.\n - Auto \$Gui: Use the \$Gui option to set Work setting if Nuke have interfece active and Render setting if the script is rendering in batch modo (Farm) automatically." -STARTLINE M {Work Render "Auto-\$Gui" "" "" "" "" "" "" "" ""}}
  addUserKnob {6 ModeBool -STARTLINE +INVISIBLE}
  addUserKnob {26 ""}
  addUserKnob {26 selectActions l "" +STARTLINE T "<font color=\"grey\" face=\"Comic Sans MS\" size=\"10\">Select actions</font>"}
  addUserKnob {4 selectAllType l "Select all" t "Type to select the nodes of the script." M {Kronos Transform ScanlineRender Switch VectorBlur2 "" "" "" "" "" "" "" "" "" "" "" "" "" ""}}
- addUserKnob {22 selectAllExec l Select t "Select all the nodes in the script of the selected type." -STARTLINE T "nodeType = nuke.thisNode().knob(\"selectAllType\").value()\nwith nuke.toNode('.'.join(\['root'] + nuke.thisNode().fullName().split('.')\[:-1])):\n    for n in nuke.allNodes(nodeType):\n        n.setSelected(True)"}
+ addUserKnob {22 selectAllExec l Select t "Select all the nodes in the script of the selected type." -STARTLINE T "nodeType = nuke.thisNode().knob(\"selectAllType\").value()\nwith nuke.thisNode().parent():\n    for n in nuke.allNodes(nodeType):\n        n.setSelected(True)"}
  addUserKnob {4 selectParentType l "Select Parent" t "Type to select the parent nodes." M {All Kronos Transform ScanlineRender Switch VectorBlur2 "" "" "" ""}}
- addUserKnob {22 selectParentExec l Select t "Select the nodes parent to the Render HUB of the selected type." -STARTLINE T "nodeType = nuke.thisNode().knob(\"selectParentType\").value()\nwith nuke.toNode('.'.join(\['root'] + nuke.thisNode().fullName().split('.')\[:-1])):\n    for n in nuke.allNodes():\n        if n.name() == \"Render_HUB\":\n            continue\n        if n.Class() != nodeType and nodeType != \"All\":\n            continue\n        nLink = False\n        for knob in n.allKnobs():\n            if knob.hasExpression():\n                if knob.toScript().find(\"Render_HUB\") >= 0:\n                    nLink = True\n            if nLink:\n                n.setSelected(True)\n                break"}
+ addUserKnob {22 selectParentExec l Select t "Select the nodes parent to the Render HUB of the selected type." -STARTLINE T "nodeType = nuke.thisNode().knob(\"selectParentType\").value()\nwith nuke.thisNode().parent():\n    for n in nuke.allNodes():\n        if n.name() == \"Render_HUB\":\n            continue\n        if n.Class() != nodeType and nodeType != \"All\":\n            continue\n        nLink = False\n        for knob in n.allKnobs():\n            if knob.hasExpression():\n                if knob.toScript().find(\"Render_HUB\") >= 0:\n                    nLink = True\n            if nLink:\n                n.setSelected(True)\n                break"}
  addUserKnob {26 ""}
  addUserKnob {26 parentActions l "" +STARTLINE T "<font color=\"grey\" face=\"Comic Sans MS\" size=\"10\">Parent actions</font>"}
- addUserKnob {26 parentKnobText l "" +STARTLINE T "Link a Knob "}
- addUserKnob {4 knobType l "" t "Knob or node configuration type to parent/unparent when executes this option." +STARTLINE M {Disable Switch Filter "" "" "" "" "" "" ""}}
- addUserKnob {4 linkKnobAction l "" t "Parent action to execute to the selected nodes." -STARTLINE M {Parent Unparent "" "" "" "" ""}}
- addUserKnob {22 execDisable l "Execute to Selected" t "Parent/Unparent the selected knob/configuration of the selected node to the Render HUB." -STARTLINE T "expresion = \"!parent.\{nodeName\}.ModeBool\"\nrenderHub = nuke.thisNode()\naction = renderHub.knob(\"linkKnobAction\").value()\nknobName = renderHub.knob(\"knobType\").value()\nknobName = \"disable\" if knobName == \"Disable\" else knobName\nif knobName == \"Switch\":\n    knobName = \"which\"\n    expresion = \"parent.\{nodeName\}.ModeBool? 0:1\"\nif knobName == \"Filter\":\n    knobName = \"filter\"\n    expresion = \"parent.\{nodeName\}.Render_HUB_ProfileTransform_work.filter\"\n    expresion = \"parent.\{nodeName\}.ModeBool? parent.\{nodeName\}.Render_HUB_ProfileTransform_Render.filter: parent.\{nodeName\}.Render_HUB_ProfileTransform_Work.filter\"\nwith nuke.toNode('.'.join(\['root'] + nuke.thisNode().fullName().split('.')\[:-1])):\n    for node in nuke.selectedNodes():\n        if node.fullName() == renderHub.fullName():\n            continue\n        knob = node.knob(knobName)\n        if knob is None:\n            continue\n        if action == \"Parent\":\n            knob.setExpression(expresion.format(nodeName=renderHub.name()))\n        elif action == \"Unparent\":\n            knob.clearAnimated()"}
- addUserKnob {26 parentScanlineText l "" +STARTLINE T "Scanline Render Nodes Actions"}
- addUserKnob {4 actionScanlineRender l "" t "Parent action to execute to the selected Scanline Render node." +STARTLINE M {Parent Unparent "" "" "" ""}}
- addUserKnob {4 parentScanlineProfile l "" t "Render profile of the HUB to parent the selected nodes." -STARTLINE M {Profile1 Profile2 "" "" "" "" "" "" "" ""}}
- addUserKnob {22 execScanlineRenderParent l "Execute to Selected" t "Parent/Unparent the selected scanlineRenders to the selected profile." -STARTLINE T "parentKnobs = \[\"conservative_shader_sampling\", \"transparency\", \"ztest_enabled\", \"filter\", \"antialiasing\",\n\"zblend_mode\", \"zblend_range\", \"projection_mode\", \"max_tessellation\", \"overscan\", \"ambient\", \n\"samples\", \"shutter\", \"shutteroffset\", \"shuttercustomoffset\", \"temporal_jitter\", \"spatial_jitter\", \n\"focal_jitter\", \"stochastic_samples\", \"motion_vectors_type\"]\n\nexpresion = \"parent.\{nodeName\}.ModeBool? parent.\{nodeName\}.Render_HUB_\{profile\}_Render.\{knob\} : parent.\{nodeName\}.Render_HUB_\{profile\}_Work.\{knob\}\"\nrenderHub = nuke.thisNode()\nwith nuke.toNode('.'.join(\['root'] + nuke.thisNode().fullName().split('.')\[:-1])):\n    profileValue = renderHub.knob(\"parentScanlineProfile\").value()\n    action = renderHub.knob(\"actionScanlineRender\").value()\n    for node in nuke.selectedNodes(\"ScanlineRender\"):\n        nodeKnobs = node.knobs().keys()\n        for knob in nodeKnobs:\n            if knob not in parentKnobs:\n                continue\n            if action == \"Parent\":\n                node.knob(knob).setExpression(expresion.format(nodeName=renderHub.name(), knob=knob, profile=profileValue))\n            elif action == \"Unparent\":\n                node.knob(knob).clearAnimated()\n"}
+ addUserKnob {6 useRoot l "Hide Links (Root Parent)" t "Use The project settings (Root) of the script to centralise the Render Mode and Hide don't create expresion links between the nodes." +STARTLINE}
+ addUserKnob {26 parentKnobText l "" +STARTLINE T "Link a Node"}
+ addUserKnob {4 knobType l "" t "Knob or node configuration type to parent/unparent when executes this option." +STARTLINE M {Auto Disable Switch Filter ScanlineRender "" "" "" "" "" "" "" "" "" "" "" "" "" ""}}
+ addUserKnob {4 linkKnobAction l "" t "Parent action to execute to the selected nodes." -STARTLINE M {Parent Unparent "" "" "" "" "" "" "" "" ""}}
+ addUserKnob {4 parentScanlineProfile l "" t "Render profile of the HUB to parent the selected nodes." -STARTLINE M {Profile1 Profile2 "" "" "" "" "" "" "" "" ""}}
+ addUserKnob {22 execParent l "Execute to Selected" t "Parent/Unparent the selected knob/configuration of the selected node to the Render HUB." -STARTLINE T "parentKnobs = \[\"conservative_shader_sampling\", \"transparency\", \"ztest_enabled\", \"filter\", \"antialiasing\",\n\"zblend_mode\", \"zblend_range\", \"projection_mode\", \"max_tessellation\", \"overscan\", \"ambient\", \n\"samples\", \"shutter\", \"shutteroffset\", \"shuttercustomoffset\", \"temporal_jitter\", \"spatial_jitter\", \n\"focal_jitter\", \"stochastic_samples\", \"motion_vectors_type\"]\n\ndef getExpresion(knobType, baseExp):\n    expression = \"!\{0\}\".format(baseExp)\n    knobName = \"disable\" if knobType == \"Disable\" else knobType\n    if knobName == \"Switch\":\n        knobName = \"which\"\n        expression = \"\{0\}? 0:1\".format(baseExp)\n    elif knobName == \"Filter\":\n        knobName = \"filter\"\n        expression = \"parent.\{nodeName\}.Render_HUB_ProfileTransform_work.filter\"\n        expression = \"\{0\}? parent.\{nodeName\}.Render_HUB_ProfileTransform_Render.filter: parent.\{nodeName\}.Render_HUB_ProfileTransform_Work.filter\".replace(\"\{0\}\", baseExp)\n    elif knobName == \"ScanlineRender\":\n        expression = \"\{0\}? parent.\{nodeName\}.Render_HUB_\{profile\}_Render.\{knob\} : parent.\{nodeName\}.Render_HUB_\{profile\}_Work.\{knob\}\".replace(\"\{0\}\", baseExp)\n    return knobName, expression\n    \ndef getNodeKnobType(node):\n    nodeType = node.Class()\n    if nodeType == \"Switch\":\n        knobType = \"Switch\"\n    elif nodeType in \[\"Transform\"]:\n        knobType = \"Filter\"\n    elif nodeType == \"ScanlineRender\":\n        knobType = \"ScanlineRender\"\n    else:\n        knobType = \"Disable\"\n    return knobType\n\nrenderHub = nuke.thisNode()\nif renderHub.knob(\"useRoot\").value():\n    baseExp = \"parent.jhi_RenderHUB_mode\"\nelse:\n    baseExp = \"parent.\{nodeName\}.ModeBool\"\n\naction = renderHub.knob(\"linkKnobAction\").value()\nprofileValue = renderHub.knob(\"parentScanlineProfile\").value()\nknobNameRaw = renderHub.knob(\"knobType\").value()\nknobName, expression = getExpresion(knobNameRaw, baseExp)\nwith nuke.thisNode().parent():\n    for node in nuke.selectedNodes():\n        if node.fullName() == renderHub.fullName():\n            continue\n        if knobNameRaw == \"Auto\":\n            knobName, expression = getExpresion(getNodeKnobType(node), baseExp)\n        if knobName == \"ScanlineRender\":\n            nodeKnobs = node.knobs().keys()\n            for knob in nodeKnobs:\n                if knob not in parentKnobs:\n                    continue\n                if action == \"Parent\":\n                    node.knob(knob).setExpression(expression.format(nodeName=renderHub.name(), knob=knob, profile=profileValue))\n                elif action == \"Unparent\":\n                    node.knob(knob).clearAnimated()\n        else:\n            knob = node.knob(knobName)\n            if knob is None:\n                continue\n            if action == \"Parent\":\n                knob.setExpression(expression.replace(\"\{nodeName\}\", renderHub.name()))\n            elif action == \"Unparent\":\n                knob.clearAnimated()\n"}
  addUserKnob {26 ""}
- addUserKnob {26 nodeCreationText l "" +STARTLINE T "Create nodes already parent to the HUB"}
- addUserKnob {4 nodeType l "Node Type" t "Node type to create." M {switch ScanlineRender "" "" ""}}
- nodeType ScanlineRender
- addUserKnob {22 createNode l Create t "Creates the selected node type and parent it to the Render HUB node. If the node is the ScanlineRender, it will be parent to the profile currently selecte above." -STARTLINE T "renderHub = nuke.thisNode()\nwith nuke.toNode('.'.join(\['root'] + nuke.thisNode().fullName().split('.')\[:-1])):\n    for n in nuke.selectedNodes():\n        n.setSelected(False)\n    nodeType = renderHub.knob(\"nodeType\").value()\n    if nodeType == \"switch\":\n        node = nuke.createNode(\"Switch\")\n        node.setSelected(True)\n        renderHub.knob(\"execDisable\").execute()\n    elif nodeType == \"ScanlineRender\":\n        node = nuke.createNode(\"ScanlineRender\")\n        node.setSelected(True)\n        renderHub.knob(\"execScanlineRenderParent\").execute()"}
+ addUserKnob {26 scriptCleaning_text l "" +STARTLINE T "<font color=\"grey\" face=\"Comic Sans MS\" size=\"10\">Script cleaning</font>"}
+ addUserKnob {22 cleanScriptLinks l "Clean Script Links" T "renderHub = nuke.thisNode()\nnodeName = renderHub.name()\nuseRoot = renderHub.knob(\"useRoot\").value()\nif useRoot:\n    parentExp = \"jhi_RenderHUB_mode\"\nelse:\n    parentExp = nodeName\nif nuke.ask('You are going to set the current values in the mode \"\{0\}\" and clear all the link. This action can\\'t be undone. Do you want to continue?'.format(renderHub.knob(\"Mode\").value())):\n    with nuke.thisNode().parent():\n        for n in nuke.allNodes():\n            jhiName = n.knob(\"jhi_name\")\n            if jhiName:\n                if jhiName.value() == \"Render_HUB\":\n                    continue\n\n            for knob in n.allKnobs():\n                if knob.hasExpression():\n                    if knob.toScript().find(parentExp) >= 0:\n                        knobValue = knob.value()\n                        knob.clearAnimated()\n                        knob.setValue(knobValue)\n        root = nuke.root()\n        rootMode = root.knob(\"jhi_RenderHUB_mode\")\n        if rootMode:\n            root.removeKnob(rootMode)\n        rootTab = root.knob(\"jhi_config\")\n        if rootTab:\n            root.removeKnob(rootTab)\n    renderHub.knob(\"useRoot\").setValue(False)\n    \n                    " +STARTLINE}
  addUserKnob {20 General}
  addUserKnob {26 WorkingSettingsG l "Working Settings"}
  addUserKnob {41 filter_4 l filter T Render_HUB_ProfileTransform_Work.filter}
@@ -47,7 +45,6 @@ Group {
  addUserKnob {20 Profile1}
  addUserKnob {26 WorkingSettings1 l "Working Settings"}
  addUserKnob {20 BasicSettings_w1 l BasicSettings n 1}
- BasicSettings_w1 0
  addUserKnob {41 transparency T Render_HUB_Profile1_Work.transparency}
  addUserKnob {41 ztest_enabled l Z-buffer -STARTLINE T Render_HUB_Profile1_Work.ztest_enabled}
  addUserKnob {41 filter T Render_HUB_Profile1_Work.filter}
@@ -70,7 +67,6 @@ Group {
  addUserKnob {41 focal_jitter l "focus diameter" T Render_HUB_Profile1_Work.focal_jitter}
  addUserKnob {41 stochastic_samples l "stochastic samples" T Render_HUB_Profile1_Work.stochastic_samples}
  addUserKnob {20 endGroup_1 l endGroup n -1}
- addUserKnob {26 ""}
  addUserKnob {26 RenderSettings1 l "Render Settings"}
  addUserKnob {20 BasicSettings_r l BasicSettings n 1}
  BasicSettings_r 0
@@ -98,7 +94,7 @@ Group {
  addUserKnob {20 endGroup_3 l endGroup n -1}
  addUserKnob {20 Profile2}
  addUserKnob {26 WorkingSettings2 l "Working Settings"}
- addUserKnob {20 BasicSettings_w2 l "Basic Settings" n 1}
+ addUserKnob {20 BasicSettings_w2 l BasicSettings n 1}
  BasicSettings_w2 0
  addUserKnob {41 transparency_2 l transparency T Render_HUB_Profile2_Work.transparency}
  addUserKnob {41 ztest_enabled_2 l Z-buffer -STARTLINE T Render_HUB_Profile2_Work.ztest_enabled}
@@ -125,7 +121,7 @@ Group {
  addUserKnob {41 stochastic_samples_2 l "stochastic samples" T Render_HUB_Profile2_Work.stochastic_samples}
  addUserKnob {41 uniform_distribution l "uniform distribution" -STARTLINE T Render_HUB_Profile2_Work.uniform_distribution}
  addUserKnob {20 endGroup_5 l endGroup n -1}
- addUserKnob {26 RenderSettings2 l RenderSettings}
+ addUserKnob {26 RenderSettings2 l "Render Settings"}
  addUserKnob {20 BasicSettings_r2 l BasicSettings n 1}
  BasicSettings_r2 0
  addUserKnob {41 transparency_3 l transparency T Render_HUB_Profile2_Render.transparency}
@@ -152,11 +148,16 @@ Group {
  addUserKnob {41 stochastic_samples_3 l "stochastic samples" T Render_HUB_Profile2_Render.stochastic_samples}
  addUserKnob {41 uniform_distribution_1 l "uniform distribution" -STARTLINE T Render_HUB_Profile2_Render.uniform_distribution}
  addUserKnob {20 endGroup_7 l endGroup n -1}
+ addUserKnob {20 jhi_help l Help t "Information about the Node."}
+ addUserKnob {26 jhi_info l "" +STARTLINE T "Render HUB v0.2.0 - Node develop by Jorge Hernandez (JorgeHI)"}
+ addUserKnob {26 jhi_contact l "" +STARTLINE T "\n<font color=\"grey\">For asistance or bug report contact: info@jorgehi.com\n</font>"}
+ addUserKnob {22 jhi_doc l Documentation T "nukescripts.start(\"https://jorgehi.com/index.php/render-hub/\")" +STARTLINE}
+ addUserKnob {22 jhi_nukepedia l Nukepedia -STARTLINE T "nukescripts.start(\"https://www.nukepedia.com/gizmos/other/render_hub\")"}
  addUserKnob {20 jhi_config l config +INVISIBLE}
  addUserKnob {1 jhi_name}
  jhi_name Render_HUB
  addUserKnob {1 jhi_version}
- jhi_version 0.1.0
+ jhi_version 0.2.0
 }
  Input {
   inputs 0
@@ -171,6 +172,10 @@ Group {
  }
  ScanlineRender {
   inputs 0
+  zblend_mode smooth
+  zblend_range 0.0245
+  max_tessellation -2
+  overscan 2.9
   name Render_HUB_Profile1_Work
   xpos -70
   ypos 200
