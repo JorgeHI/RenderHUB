@@ -3,6 +3,8 @@
 ![Static Badge](https://img.shields.io/badge/DCC-Nuke-yellow?style=flat&logo=nuke&logoColor=yellow&logoSize=auto) 
 ![Static Badge](https://img.shields.io/badge/Python-grey?style=flat&logo=python&logoSize=auto) 
 ![Static Badge](https://img.shields.io/badge/TCL-grey?style=flat&logo=nuke&logoColor=yellow&logoSize=auto)
+![Static Badge](https://img.shields.io/badge/Node-Group-lightgrey?logo=nuke&logoColor=yellow)
+
 
 Render_HUB it's a Nuke node to manage different knob values profiles for nodes of your script and be able to change between a work and a render mode easily. In this way you can set up low quality and fast values for your work profile and high quality values for rendering.
 
