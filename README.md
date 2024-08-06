@@ -4,7 +4,7 @@
 ![Static Badge](https://img.shields.io/badge/Python-grey?style=flat&logo=python&logoSize=auto) 
 ![Static Badge](https://img.shields.io/badge/TCL-grey?style=flat&logo=nuke&logoColor=yellow&logoSize=auto)
 
-Render_HUB it's a Nuke node to manage different knob values profiles for nodes of your script and be able to change between a work and a render mode easily. In this way you can setup low quality and fast values for your work profile and high quality values for rendering.
+Render_HUB it's a Nuke node to manage different knob values profiles for nodes of your script and be able to change between a work and a render mode easily. In this way you can set up low quality and fast values for your work profile and high quality values for rendering.
 
 With this node you can link all your nodes to a central location when you can set the mode and all you linked nodes will be updated automatically.
 
@@ -14,7 +14,7 @@ With this node you can link all your nodes to a central location when you can se
 
 - Custom Profiles creation and management.
 - Support for all Nuke's native nodes.
-- Option to hide link for boolean conditions (disable & switch)
+- Option to hide boolean conditions links (disable & switch)
 - Script cleaning. Remove all expressions and custom knobs to remove the Render_HUB from your script and keep it working.
 - Selection utilities by node types and parent nodes.
 
