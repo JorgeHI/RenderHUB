@@ -24,9 +24,18 @@ With this node you can link all your nodes to a central location when you can se
 - Script cleaning. Remove all expressions and custom knobs to remove the Render_HUB from your script and keep it working.
 - Selection utilities by node types and parent nodes.
 
+<picture width="50%" >
+    <source srcset="https://github.com/user-attachments/assets/4adba0f0-0f04-46ce-a4b9-72e1161698e2"  media="(prefers-color-scheme: dark)">
+    <img src="https://github.com/user-attachments/assets/7d8e6833-18ac-40e3-8f9b-b422c4ee8696">
+</picture>
+
+## Documentation
+[Check the Node documentation here](documentation.md)
+
 ## Supported Versions
 
 ![Static Badge](https://img.shields.io/badge/Nuke-%3E%3D13.0-yellow?style=flat&logo=nuke&logoColor=yellow&logoSize=auto)
+![Static Badge](https://img.shields.io/badge/Nuke%20Licence-Commercial-yellow?logo=Nuke&logoColor=yellow)
 ![Static Badge](https://img.shields.io/badge/Python-%3E%3D3.6-blue?style=flat&logo=python&logoSize=auto)
 
 
